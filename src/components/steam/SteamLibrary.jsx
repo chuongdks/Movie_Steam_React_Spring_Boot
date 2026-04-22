@@ -1,11 +1,12 @@
 import { useState } from 'react';
 import api from '../../api/axiosConfig'; // Using your existing axios instance
-import { Container, Row, Col, Form, Button, ListGroup, Image } from 'react-bootstrap';
+import { Container, Row, Col, Form, Button, ListGroup, Image, ButtonGroup } from 'react-bootstrap';
 
 const SteamLibrary = () => {
     const [steamId, setSteamId] = useState('');
     const [games, setGames] = useState([]);
     const [loading, setLoading] = useState(false);
+    const [sortType, setSortType] = useState('name'); // 'name', 'playtime'
 
     // Pagination State
     const [currentPage, setCurrentPage] = useState(1);
@@ -18,6 +19,7 @@ const SteamLibrary = () => {
             // Adjust the endpoint to match your Java Controller
             const response = await api.post(`/api/v1/libraries/sync/${steamId}`);
             setGames(response.data);
+            setCurrentPage(1)
             console.log("Steam Data:", response.data);
         } catch (err) {
             console.error("Error fetching Steam library:", err);
@@ -26,18 +28,27 @@ const SteamLibrary = () => {
         }
     };
 
+    // SORTING LOGIC 
+    const sortedGames = [...games].sort((a, b) => {
+        if (sortType === 'name') {
+            return a.name.localeCompare(b.name); // Alphabetical
+        } else if (sortType === 'playtime') {
+            return b.playtime_forever - a.playtime_forever; // High to Low
+        }
+        return 0;
+    });
+
     // Logic to calculate the subset of games to display
     const indexOfLastGame = currentPage * gamesPerPage;
     const indexOfFirstGame = indexOfLastGame - gamesPerPage;
-    const currentGames = games?.slice(indexOfFirstGame, indexOfLastGame);
-
-    // Determine total pages
-    const totalPages = Math.ceil((games?.length || 0) / gamesPerPage);
+    const currentGames = sortedGames?.slice(indexOfFirstGame, indexOfLastGame);
+    const totalPages = Math.ceil((sortedGames?.length || 0) / gamesPerPage);
 
     return (
         <Container className="mt-5">
             <Row className="justify-content-center">
                 <Col md={8}>
+                    {/* DISPLAY INFO & SEARCH BAR */}
                     <h3>Steam Library Lookup</h3>
                     <Form onSubmit={fetchLibrary} className="d-flex mb-4">
                         <Form.Control
@@ -51,6 +62,28 @@ const SteamLibrary = () => {
                         </Button>
                     </Form>
 
+                    {/* SORT BUTTONS */}
+                    {games.length > 0 && (
+                        <div className="mb-3 d-flex align-items-center justify-content-between">
+                            <ButtonGroup>
+                                <Button 
+                                    variant={sortType === 'name' ? 'info' : 'outline-info'} 
+                                    onClick={() => {setSortType('name'); setCurrentPage(1);}}
+                                >
+                                    Sort by Name
+                                </Button>
+                                <Button 
+                                    variant={sortType === 'playtime' ? 'info' : 'outline-info'} 
+                                    onClick={() => {setSortType('playtime'); setCurrentPage(1);}}
+                                >
+                                    Sort by Playtime
+                                </Button>
+                            </ButtonGroup>
+                            <span className="text-muted small">Total: {games.length} games</span>
+                        </div>
+                    )}
+
+                    {/* LIBRARY LIST*/}
                     <ListGroup>
                         {currentGames?.map((game) => (
                             <ListGroup.Item key={game.appid} className="d-flex align-items-center">
@@ -68,12 +101,17 @@ const SteamLibrary = () => {
                                         App ID: {game.appid}
                                     </div >
                                 </div>
+                                <div className="text-end">
+                                    <span className="badge bg-secondary">
+                                        {Math.round(game.playtime_forever / 60)} hrs
+                                    </span>
+                                </div>
                             </ListGroup.Item>
                         ))}
                     </ListGroup>
 
-                    {/* Pagination Controls */}
-                    {games.length > gamesPerPage && (
+                    {/* PAGINATION CONTROL */}
+                    {sortedGames.length > gamesPerPage && (
                         <div className="d-flex justify-content-between align-items-center mt-3">
                             <Button 
                                 variant="secondary" 

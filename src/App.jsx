@@ -9,6 +9,7 @@ import Trailer from './components/trailer/Trailer.jsx'
 import Reviews from './components/reviews/Review.jsx';
 import NotFound from './components/notFound/NotFound.jsx';
 import SteamLibrary from './components/steam/SteamLibrary.jsx';
+import Dashboard from './components/dashboard/Dashboard.jsx'
 
 function App() {
 
@@ -59,6 +60,7 @@ function App() {
             <Route path="/Trailer/:ytTrailerId" element={<Trailer/>}></Route>
             <Route path="/Reviews/:movieId" element ={<Reviews getMovieData={getMovieData} movie={movie} reviews={reviews} setReviews={setReviews} />}></Route>
             <Route path="/steam" element={<SteamLibrary />} />
+            <Route path="/dashboard" element={<Dashboard />} />
             <Route path="*" element = {<NotFound/>}></Route>
           </Route>
       </Routes>
