@@ -14,13 +14,22 @@ const SteamLibrary = () => {
     const [currentPage, setCurrentPage] = useState(1);
     const gamesPerPage = 20; // Grid layout (4x5 or 5x4)
 
-    // 1. Create a pure data fetching function
-    const performSync = async (idToUse) => {
-        if (!idToUse) return;
+    // Automatic Load steam id on Mount
+    useEffect(() => {
+        const savedId = localStorage.getItem("steamId");
+        if (savedId) {
+            // setSteamId(savedId);
+            performSync(savedId); 
+        }
+    }, []);
+
+    // Create a pure data fetching function
+    const performSync = async (id) => {
+        if (!id) return;
         
         setLoading(true);
         try {
-            const response = await api.post(`/api/v1/libraries/sync/${idToUse}`);
+            const response = await api.post(`/api/v1/libraries/sync/${id}`);
             setGames(response.data);
             setCurrentPage(1);
         } catch (err) {
@@ -29,21 +38,6 @@ const SteamLibrary = () => {
             setLoading(false);
         }
     };
-
-    // 2. Handle the manual form submission
-    const handleSearchSubmit = (e) => {
-        e.preventDefault();     // handles UI event
-        performSync(steamId);   // handles data
-    };
-
-    // 3. Handle the automatic load on mount
-    useEffect(() => {
-        const savedId = localStorage.getItem("steamId");
-        if (savedId) {
-            setSteamId(savedId);
-            performSync(savedId); // No 'e' needed here
-        }
-    }, []);
 
     // 1. FILTERING (Search)
     const filteredGames = games.filter((game) => 
@@ -55,7 +49,7 @@ const SteamLibrary = () => {
         if (sortType === 'name') {
             return a.name.localeCompare(b.name);            // Alphabetical
         } else if (sortType === 'playtime') {
-            return b.playtime_forever - a.playtime_forever; // High to Low
+            return b.playtime_forever - a.playtime_forever; // Total Play Time
         }
     });
 
@@ -72,83 +66,89 @@ const SteamLibrary = () => {
 
     return (
         <Container className="steam-library mt-5">
-            <header className="page-header text-center mb-5">
-                <h1>Steam Library</h1>
-                {games.length > 0 && (
-                    <p className="text-muted">
-                        {games.length} games · {totalHours.toLocaleString()} total hours played
-                    </p>
-                )}
-            </header>
+            {/* SECTION A: AUTH/SYNC (Only show if not logged in before) */}
+            {!localStorage.getItem("steamId") && (
+                <div className="text-center mb-5">
+                    <Button href="http://localhost:8080/api/v1/auth/login" variant="dark">
+                        <img src="https://steamcdn-a.akamaihd.net/steamcommunity/public/images/steamworks_docs/english/sits_small.png" alt="Steam Login" />
+                    </Button>
+                    <p className="mt-2 text-muted">Or enter Steam ID manually:</p>
+                    <Form onSubmit={(e) => { e.preventDefault(); performSync(steamId); }} className="d-flex justify-content-center gap-2">
+                        <Form.Control 
+                            style={{ maxWidth: '300px' }}
+                            placeholder="76561198..." 
+                            value={steamId} 
+                            onChange={(e) => setSteamId(e.target.value)} 
+                        />
+                        <Button type="submit">Sync</Button>
+                    </Form>
+                </div>
+            )}
 
-            <Row className="justify-content-center mb-4">
-                <Col md={8}>
-                    <Form onSubmit={handleSearchSubmit} className="d-flex gap-2">
+            {/* SECTION B: LIBRARY CONTROLS (Only show if games exist) */}
+            {games.length > 0 && (
+                <>
+                <Row className="mb-4">
+                    <Col md={8}>
                         <Form.Control
                             type="text"
-                            placeholder="Search your library..."
+                            placeholder="Search games in your library..."
                             value={search}
-                            onChange={(e) => {setSearch(e.target.value); setCurrentPage(1);}}
-                        />
-                        {!localStorage.getItem("steamId") && (
-                            <Button variant="primary" type="submit" disabled={loading}>
-                                {loading ? <Spinner size="sm" /> : 'Sync ID'}
-                            </Button>
-                        )}
-                    </Form>
-                </Col>
-            </Row>
+                            onChange={(e) => { setSearch(e.target.value); setCurrentPage(1); } } />
+                    </Col>
+                    <Col md={4} className="text-end">
+                        <ButtonGroup>
+                            <Button 
+                                variant={sortType === 'playtime' ? 'primary' : 'outline-primary'} 
+                                onClick={() => setSortType('playtime')}
+                            >Most Played</Button>
+                            <Button 
+                                variant={sortType === 'name' ? 'primary' : 'outline-primary'} 
+                                onClick={() => setSortType('name')}
+                            >A–Z</Button>
+                        </ButtonGroup>
+                    </Col>
+                </Row>
+                
+                
+                {/* GRID DISPLAY */}
+                <div className="game-grid">
+                    {currentGames.map(game => {
+                        const hours = Math.round(game.playtime_forever / 60);
+                        const imgUrl = `https://cdn.akamai.steamstatic.com/steam/apps/${game.appid}/header.jpg`;
 
-            {games.length > 0 && (
-                <div className="steam-controls d-flex justify-content-between align-items-center mb-4">
-                    <ButtonGroup>
-                        <Button 
-                            variant={sortType === 'playtime' ? 'primary' : 'outline-primary'} 
-                            onClick={() => setSortType('playtime')}
-                        >Most Played</Button>
-                        <Button 
-                            variant={sortType === 'name' ? 'primary' : 'outline-primary'} 
-                            onClick={() => setSortType('name')}
-                        >A–Z</Button>
-                    </ButtonGroup>
+                        return (
+                            <a key={game.appid} href={`https://store.steampowered.com/app/${game.appid}`} target="_blank" rel="noopener noreferrer" className="game-card">
+                                <div className="game-art">
+                                    <img src={imgUrl} alt={game.name} loading="lazy" onError={e => { e.target.style.display = 'none'; e.target.parentElement.classList.add('no-art'); }} />
+                                </div>
+                                <div className="game-info">
+                                    <h3 className="game-name">{game.name}</h3>
+                                    <span className="game-hours">{hours > 0 ? `${hours.toLocaleString()} hrs` : '< 1 hr'}</span>
+                                </div>
+                            </a>
+                        );
+                    })}
                 </div>
-            )}
 
-            {/* GRID DISPLAY */}
-            <div className="game-grid">
-                {currentGames.map(game => {
-                    const hours = Math.round(game.playtime_forever / 60);
-                    const imgUrl = `https://cdn.akamai.steamstatic.com/steam/apps/${game.appid}/header.jpg`;
+                {/* PAGINATION */}
+                {sortedGames.length > gamesPerPage && (
+                    <div className="d-flex justify-content-center align-items-center mt-5 mb-5 gap-3">
+                        <Button variant="outline-secondary" disabled={currentPage === 1} onClick={() => setCurrentPage(prev => prev - 1)}>
+                            Previous
+                        </Button>
+                        <span className="fw-bold">Page {currentPage} of {totalPages}</span>
+                        <Button variant="outline-secondary" disabled={currentPage === totalPages} onClick={() => setCurrentPage(prev => prev + 1)}>
+                            Next
+                        </Button>
+                    </div>
+                )}
 
-                    return (
-                        <a key={game.appid} href={`https://store.steampowered.com/app/${game.appid}`} target="_blank" rel="noopener noreferrer" className="game-card">
-                            <div className="game-art">
-                                <img src={imgUrl} alt={game.name} loading="lazy" onError={e => { e.target.style.display = 'none'; e.target.parentElement.classList.add('no-art'); }} />
-                            </div>
-                            <div className="game-info">
-                                <h3 className="game-name">{game.name}</h3>
-                                <span className="game-hours">{hours > 0 ? `${hours.toLocaleString()} hrs` : '< 1 hr'}</span>
-                            </div>
-                        </a>
-                    );
-                })}
-            </div>
-
-            {/* PAGINATION */}
-            {sortedGames.length > gamesPerPage && (
-                <div className="d-flex justify-content-center align-items-center mt-5 mb-5 gap-3">
-                    <Button variant="outline-secondary" disabled={currentPage === 1} onClick={() => setCurrentPage(prev => prev - 1)}>
-                        Previous
-                    </Button>
-                    <span className="fw-bold">Page {currentPage} of {totalPages}</span>
-                    <Button variant="outline-secondary" disabled={currentPage === totalPages} onClick={() => setCurrentPage(prev => prev + 1)}>
-                        Next
-                    </Button>
-                </div>
-            )}
-
-            {sortedGames.length === 0 && !loading && (
-                <p className="text-center mt-5 text-muted">No games found matching your search.</p>
+                {/* NO GAME FOUND */}
+                {sortedGames.length === 0 && !loading && (
+                    <p className="text-center mt-5 text-muted">No games found matching your search.</p>
+                )}
+                </>
             )}
         </Container>
     );
