@@ -1,0 +1,101 @@
+.auth-modal-content {
+    background: #111;
+    color: #fff;
+    border: 1px solid #333;
+    border-radius: 14px;
+}
+.auth-modal-header .btn-close {
+    filter: invert(1);
+}
+.auth-tab {
+    color: #aaa !important;
+    border: none !important;
+    background: transparent !important;
+    font-weight: 600;
+    padding: 8px 20px;
+    border-radius: 8px 8px 0 0 !important;
+}
+.auth-tab.active {
+    color: gold !important;
+    border-bottom: 2px solid gold !important;
+    background: #1a1a1a !important;
+}
+.auth-modal-body {
+    background: #1a1a1a;
+    border-radius: 0 0 14px 14px;
+    padding: 24px 32px;
+}
+.auth-label {
+    color: #ccc;
+    font-size: 0.85rem;
+    font-weight: 600;
+    letter-spacing: 0.04em;
+    text-transform: uppercase;
+}
+.auth-input {
+    background: #242424 !important;
+    border: 1px solid #333 !important;
+    color: #fff !important;
+    border-radius: 8px;
+    padding: 10px 14px;
+    transition: border-color 0.2s;
+}
+.auth-input:focus {
+    border-color: gold !important;
+    box-shadow: 0 0 0 2px rgba(255,215,0,0.15) !important;
+}
+.auth-input::placeholder { color: #555 !important; }
+.auth-submit-btn {
+    background: gold;
+    border: none;
+    color: #111;
+    font-weight: 700;
+    border-radius: 8px;
+    padding: 10px;
+    transition: opacity 0.2s, transform 0.1s;
+}
+.auth-submit-btn:hover:not(:disabled) {
+    opacity: 0.9;
+    transform: translateY(-1px);
+    background: gold;
+    color: #111;
+}
+.auth-submit-btn:disabled { opacity: 0.6; background: gold; color: #111; }
+.auth-divider {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    color: #555;
+    font-size: 0.8rem;
+    margin: 16px 0 0;
+}
+.auth-divider::before,
+.auth-divider::after {
+    content: '';
+    flex: 1;
+    height: 1px;
+    background: #333;
+}
+.steam-sso-btn {
+    border: none;
+    background: none;
+    padding: 0;
+    cursor: pointer;
+    opacity: 0.9;
+    transition: opacity 0.2s, transform 0.2s;
+}
+.steam-sso-btn:hover { opacity: 1; transform: scale(1.03); }
+.auth-switch-text {
+    color: #777;
+    font-size: 0.85rem;
+}
+.auth-link-btn {
+    background: none;
+    border: none;
+    color: gold;
+    padding: 0;
+    font-size: inherit;
+    cursor: pointer;
+    text-decoration: underline;
+}
+.auth-link-btn:hover { opacity: 0.8; }
