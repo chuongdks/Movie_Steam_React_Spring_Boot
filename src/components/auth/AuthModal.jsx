@@ -1,4 +1,4 @@
-import { useState, useRef } from 'react';
+import { useState, useRef, useEffect } from 'react';
 import { Modal, Tab, Nav, Form, Button, Alert, Spinner } from 'react-bootstrap';
 import { useAuth } from '../../context/AuthContent';
 import myStyles from './AuthModal.css?inline';
@@ -6,16 +6,16 @@ import myStyles from './AuthModal.css?inline';
 /**
  * 
  * @props {*}  
- *   show        {boolean}  — controlled by Header
- *   onHide      {function} — close the modal
- *   defaultTab  {'login'|'register'} — which tab to open first
+ *   show        {boolean}  — controlled by Header (for the Modal)
+ *   onHide      {function} — close the modal (for the Modal)
+ *   defaultTab  {'login'|'register'} — which tab to open first (for the Nav)
  * @returns 
  */
-const AuthModal = ({ show, onHide, defaultTab = 'login' }) => {
+const AuthModal = ({ show, onHide, defaultTab }) => {
     const { login, register } = useAuth();
 
     // ── Form state ────────────────────────────────────────────────────────────
-    const [activeTab,  setActiveTab]  = useState(defaultTab);   // defaultTab | 'login' | 'register'
+    const [activeTab,  setActiveTab]  = useState(defaultTab);   // defaultTab: 'login' | 'register'
     const [loading,    setLoading]    = useState(false);
     const [error,      setError]      = useState('');
     const [success,    setSuccess]    = useState('');
@@ -111,7 +111,13 @@ const AuthModal = ({ show, onHide, defaultTab = 'login' }) => {
     const handleSteamLogin = () => {
         window.location.href = 'http://localhost:8080/api/v1/auth/login';
     };
-
+    // Inside the AuthModal component:
+    useEffect(() => {
+        if (show) {
+            setActiveTab(defaultTab);
+        }
+    }, [show, defaultTab]);
+    
     return (
         <Modal
             show={show}
@@ -145,7 +151,7 @@ const AuthModal = ({ show, onHide, defaultTab = 'login' }) => {
                             <Form.Control
                                 className="auth-input"
                                 type="text"
-                                placeholder="User Email"
+                                placeholder="User Name or E-mail"
                                 value={loginUser}
                                 onChange={e => setLoginUser(e.target.value)}
                                 autoComplete="username"
@@ -201,7 +207,7 @@ const AuthModal = ({ show, onHide, defaultTab = 'login' }) => {
                             <Form.Control
                                 className="auth-input"
                                 type="text"
-                                placeholder="choose_a_username"
+                                placeholder="Your User Name"
                                 value={regUser}
                                 onChange={e => setRegUser(e.target.value)}
                                 autoComplete="username"
@@ -213,7 +219,7 @@ const AuthModal = ({ show, onHide, defaultTab = 'login' }) => {
                             <Form.Control
                                 className="auth-input"
                                 type="email"
-                                placeholder="you@example.com"
+                                placeholder="Your Email"
                                 value={regEmail}
                                 onChange={e => setRegEmail(e.target.value)}
                                 autoComplete="email"
@@ -225,7 +231,7 @@ const AuthModal = ({ show, onHide, defaultTab = 'login' }) => {
                             <Form.Control
                                 className="auth-input"
                                 type="password"
-                                placeholder="at least 6 characters"
+                                placeholder="Enter Password"
                                 value={regPass}
                                 onChange={e => setRegPass(e.target.value)}
                                 autoComplete="new-password"
@@ -237,7 +243,7 @@ const AuthModal = ({ show, onHide, defaultTab = 'login' }) => {
                             <Form.Control
                                 className="auth-input"
                                 type="password"
-                                placeholder="••••••••"
+                                placeholder="Re-enter Password"
                                 value={regConfirm}
                                 onChange={e => setRegConfirm(e.target.value)}
                                 autoComplete="new-password"
@@ -245,7 +251,7 @@ const AuthModal = ({ show, onHide, defaultTab = 'login' }) => {
                         </Form.Group>
 
                         <Button type="submit" className="auth-submit-btn w-100" disabled={loading}>
-                            {loading ? <Spinner size="sm" animation="border" /> : 'Create Account'}
+                            {loading ? <Spinner size="sm" animation="border" /> : 'Create An Account'}
                         </Button>
 
                         <p className="text-center mt-3 auth-switch-text">
