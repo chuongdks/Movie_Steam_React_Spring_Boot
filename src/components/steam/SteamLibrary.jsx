@@ -1,11 +1,13 @@
 import { useState, useEffect } from 'react';
+import { useLocation } from 'react-router-dom';
 import api from '../../api/axiosConfig'; // Using your existing axios instance
 import { Container, Row, Col, Form, Button, Spinner, ButtonGroup } from 'react-bootstrap';
 import './SteamLibrary.css';
 
 const SteamLibrary = () => {
+    const location = useLocation(); // Access passed state
     const [steamId, setSteamId]     = useState('');
-    const [games, setGames]         = useState([]);
+    const [games, setGames]         = useState(location.state?.initialGames || []);
     const [loading, setLoading]     = useState(false);
     const [sortType, setSortType]   = useState('name'); // 'name', 'playtime'
     const [search, setSearch]       = useState('');
@@ -17,8 +19,8 @@ const SteamLibrary = () => {
     // Automatic Load steam id on Mount
     useEffect(() => {
         const savedId = localStorage.getItem("steamId");
-        if (savedId) {
-            // setSteamId(savedId);
+        // ONLY sync if we didn't just come from the Dashboard with data
+        if (savedId && games.length === 0) {
             performSync(savedId); 
         }
     }, []);

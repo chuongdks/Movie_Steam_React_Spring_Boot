@@ -23,8 +23,9 @@ function Dashboard() {
                 console.log("Finalizing login for SteamID:", steamId);
                 
                 // 1. Sync steam library to the database
-                await api.post(`/api/v1/libraries/sync/${steamId}`);
-                
+                const response = await api.post(`/api/v1/libraries/sync/${steamId}`);
+                const gamesData = response.data;    // list of games from backend
+
                 // 2. Persist the ID so SteamLibrary.jsx can auto-load on refresh
                 localStorage.setItem("steamId", steamId);
                 
@@ -32,7 +33,7 @@ function Dashboard() {
 
                 // 3. Navigate to the Library after a brief success message
                 setTimeout(() => {
-                    navigate('/steam');
+                    navigate('/steam', { state: { initialGames: gamesData } });
                 }, 1500);
 
             } catch (err) {

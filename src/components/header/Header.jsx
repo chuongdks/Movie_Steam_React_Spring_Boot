@@ -86,7 +86,7 @@ const Header = () => {
 
             {/* Auth Modal — rendered once, controlled by modalTab state */}
             <AuthModal
-                show={modalTab !== null} // Change the Modal's show boolean in AuthModal.jsx (true -> show)
+                show={modalTab !== null} // Change the Modal's "show: boolean in AuthModal.jsx (true -> show)
                 onHide={closeModal}
                 defaultTab={modalTab ?? 'login'}
             />

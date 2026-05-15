@@ -31,8 +31,8 @@ export const AuthProvider = ({ children }) => {
     }, []);
 
     // ── LOGIN ────────────────────────────────────────────────────────────
-    // Request : POST /api/v1/auth/login  { username, password }
-    // Response: { token, user: { username, email, role } }
+    // Request : POST /api/v1/auth/login  { "username": "john", "password": "secret123" }
+    // Response: { "token": "lmao...", "user": { "username", "email", "role" } }
     const login = async (username, password) => {
         const response = await api.post('/api/v1/auth/login', { username, password });
         const { token, user: userData } = response.data;
@@ -45,8 +45,8 @@ export const AuthProvider = ({ children }) => {
     };
 
     // ── REGISTRATION ────────────────────────────────────────────────────────────
-    // Request : POST /api/v1/auth/register  { username, email, password }
-    // Response: { token, user: { username, email, role } }
+    // Request : POST /api/v1/auth/register  { "username": "john", "email": "a@b.com", "password": "secret123" }
+    // Response: { "token": "lmao...", "user": { "username", "email", "role" } }
     const register = async (username, email, password) => {
         const response = await api.post('/api/v1/auth/register', { username, email, password });
         const { token, user: userData } = response.data;
@@ -83,5 +83,5 @@ export const AuthProvider = ({ children }) => {
     );
 };
 
-/** Convenience hook — use anywhere in the tree */
+// Convenience hook. Use anywhere in the tree. Ex: const { user, logout, ... } = useAuth();
 export const useAuth = () => useContext(AuthContext);

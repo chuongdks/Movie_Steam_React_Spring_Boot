@@ -53,7 +53,7 @@ const AuthModal = ({ show, onHide, defaultTab }) => {
         clearMessages(); 
     };
 
-    // ── Submit Form: Login (AuthContent.jsx usage) ──────────────────────────────────────
+    // ── Submit Function: Login (AuthContent.jsx usage) ──────────────────────────────────────
     const handleLogin = async (e) => {
         e.preventDefault();
         clearMessages();
@@ -63,6 +63,7 @@ const AuthModal = ({ show, onHide, defaultTab }) => {
             return;
         }
 
+        // do the login
         setLoading(true);
         try {
             await login(loginUser, loginPass);
@@ -76,12 +77,12 @@ const AuthModal = ({ show, onHide, defaultTab }) => {
         }
     };
 
-    // ── Submit: Register (AuthContent.jsx usage) ───────────────────────────────────────
+    // ── Submit Function: Register (AuthContent.jsx usage) ───────────────────────────────────────
     const handleRegister = async (e) => {
         e.preventDefault();
         clearMessages();
         
-        // Put more bs user name / password requirement here
+        // Put more bs user name / password requirement here, or do it in the Back End Account Service Layer
         if (!regUser || !regEmail || !regPass || !regConfirm) {
             setError('Please fill in all fields.');
             return;
@@ -95,6 +96,7 @@ const AuthModal = ({ show, onHide, defaultTab }) => {
             return;
         }
 
+        // Do the register  
         setLoading(true);
         try {
             await register(regUser, regEmail, regPass);
@@ -111,7 +113,8 @@ const AuthModal = ({ show, onHide, defaultTab }) => {
     const handleSteamLogin = () => {
         window.location.href = 'http://localhost:8080/api/v1/auth/login';
     };
-    // Inside the AuthModal component:
+
+    // need this to show the correct active default tab (login, register) initially
     useEffect(() => {
         if (show) {
             setActiveTab(defaultTab);
