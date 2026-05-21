@@ -1,31 +1,62 @@
 import { useState, useEffect } from 'react';
-import { useLocation } from 'react-router-dom';
-import api from '../../api/axiosConfig'; // Using your existing axios instance
-import { Container, Row, Col, Form, Button, Spinner, ButtonGroup } from 'react-bootstrap';
+import { useLocation, useSearchParams } from 'react-router-dom';
+import api from '../../api/axiosConfig'; 
+import { useAuth } from '../../context/AuthContent';
+import { Container, Row, Col, Form, Button, Spinner, Alert, ButtonGroup } from 'react-bootstrap';
 import './SteamLibrary.css';
 
 const SteamLibrary = () => {
-    const location = useLocation(); // Access passed state
-    const [steamId, setSteamId]     = useState('');
-    const [games, setGames]         = useState(location.state?.initialGames || []);
-    const [loading, setLoading]     = useState(false);
-    const [sortType, setSortType]   = useState('name'); // 'name', 'playtime'
-    const [search, setSearch]       = useState('');
+    const location                          = useLocation();    // Access passed state
+    const [searchParams, setSearchParams]   = useSearchParams();
+    const { user, updateSteamId }           = useAuth();
 
+    const [steamId, setSteamId]             = useState('');
+    const [games, setGames]                 = useState(location.state?.initialGames || []);
+    const [loading, setLoading]             = useState(false);
+    const [linkAlert, setLinkAlert]         = useState(null); // { type: 'success'|'danger', message }
+
+    const [sortType, setSortType]           = useState('name'); // 'name', 'playtime'
+    const [search, setSearch]               = useState('');
     // Pagination State
     const [currentPage, setCurrentPage] = useState(1);
-    const gamesPerPage = 20; // Grid layout (4x5 or 5x4)
+    const gamesPerPage                  = 20;               // Grid layout (4x5 or 5x4)
 
-    // Automatic Load steam id on Mount
+    // ── Handle Steam link-callback redirect ───────────────────────────────────
+    // After linking, backend redirects to /steam?linked=true&steamid=XXX
+    // search/read those params once, update auth context, then clean the URL
+    useEffect(() => {
+        const linked  = searchParams.get('linked');
+        const newSteamId = searchParams.get('steamid');
+
+        if (linked === 'true' && newSteamId) {
+            // Update the user object in AuthContext + localStorage
+            updateSteamId(newSteamId);
+            localStorage.setItem('steamId', newSteamId);
+            setLinkAlert({ type: 'success', message: 'Steam account linked successfully!' });
+
+            // Clean the URL so a refresh doesn't re-trigger this
+            setSearchParams({}, { replace: true });
+
+            // Sync the library with the newly linked steamId
+            performSync(newSteamId);
+
+        } else if (linked === 'false') {
+            const reason = searchParams.get('reason') || 'Steam linking failed. Please try again.';
+            setLinkAlert({ type: 'danger', message: decodeURIComponent(reason) });
+            setSearchParams({}, { replace: true });
+        }
+    }, []); // run once on mount
+
+    // ── Auto-load on mount (refresh / direct navigation) ──────────────────────
     useEffect(() => {
         const savedId = localStorage.getItem("steamId");
-        // ONLY sync if we didn't just come from the Dashboard with data
+        // Sync if: Page didn't come from Dashboard, or When user hit F5
         if (savedId && games.length === 0) {
             performSync(savedId); 
         }
     }, []);
 
-    // Create a pure data fetching function
+    // ── Sync library from the back end ──────────────────────────────────────────────────
     const performSync = async (id) => {
         if (!id) return;
         
@@ -41,6 +72,7 @@ const SteamLibrary = () => {
         }
     };
 
+    // ── Filter → Sort → Paginate ──────────────────────────────────────────────
     // 1. FILTERING (Search)
     const filteredGames = games.filter((game) => 
         game.name.toLowerCase().includes(search.toLowerCase())
@@ -68,88 +100,141 @@ const SteamLibrary = () => {
 
     return (
         <Container className="steam-library mt-5">
-            {/* SECTION A: AUTH/SYNC (Only show if not logged in before) */}
-            {!localStorage.getItem("steamId") && (
+            {/* Link feedback banner */}
+            {linkAlert && (
+                <Alert
+                    variant={linkAlert.type}
+                    dismissible
+                    onClose={() => setLinkAlert(null)}
+                    className="mb-4"
+                >
+                    {linkAlert.message}
+                </Alert>
+            )}
+
+            {/* Loading spinner */}
+            {loading && (
+                <div className="text-center py-5">
+                    <Spinner animation="border" variant="primary" />
+                    <p className="mt-3 text-muted">Loading your library...</p>
+                </div>
+            )}
+
+            {/* SECTION A: No Steam ID yet — show login options */}
+            {!loading && !localStorage.getItem('steamId') && games.length === 0 && (
                 <div className="text-center mb-5">
-                    <Button href="http://localhost:8080/api/v1/auth/login" variant="dark">
-                        <img src="https://steamcdn-a.akamaihd.net/steamcommunity/public/images/steamworks_docs/english/sits_small.png" alt="Steam Login" />
-                    </Button>
-                    <p className="mt-2 text-muted">Or enter Steam ID manually:</p>
-                    <Form onSubmit={(e) => { e.preventDefault(); performSync(steamId); }} className="d-flex justify-content-center gap-2">
-                        <Form.Control 
-                            style={{ maxWidth: '300px' }}
-                            placeholder="76561198..." 
-                            value={steamId} 
-                            onChange={(e) => setSteamId(e.target.value)} 
-                        />
-                        <Button type="submit">Sync</Button>
-                    </Form>
+                    {/* If logged in with a normal account, show Link Steam instead */}
+                    {user ? (
+                        <>
+                            <p className="text-muted mb-3">Link your Steam account to view your library.</p>
+                            <Button
+                                variant="dark"
+                                onClick={() => { window.location.href = `http://localhost:8080/api/v1/auth/steam/link?username=${user.username}`; }}
+                            >
+                                <img
+                                    src="https://steamcdn-a.akamaihd.net/steamcommunity/public/images/steamworks_docs/english/sits_small.png"
+                                    alt="Link Steam Account"
+                                />
+                            </Button>
+                        </>
+                    ) : (
+                        <>
+                            <Button
+                                variant="dark"
+                                href="http://localhost:8080/api/v1/auth/login"
+                            >
+                                <img
+                                    src="https://steamcdn-a.akamaihd.net/steamcommunity/public/images/steamworks_docs/english/sits_small.png"
+                                    alt="Sign in through Steam"
+                                />
+                            </Button>
+                            <p className="mt-3 text-muted">Or enter your Steam ID manually:</p>
+                            <Form
+                                onSubmit={(e) => { e.preventDefault(); performSync(steamId); }}
+                                className="d-flex justify-content-center gap-2"
+                            >
+                                <Form.Control
+                                    style={{ maxWidth: '300px' }}
+                                    placeholder="76561198..."
+                                    value={steamId}
+                                    onChange={(e) => setSteamId(e.target.value)}
+                                />
+                                <Button type="submit">Sync</Button>
+                            </Form>
+                        </>
+                    )}
                 </div>
             )}
 
             {/* SECTION B: LIBRARY CONTROLS (Only show if games exist) */}
-            {games.length > 0 && (
+            {!loading && games.length > 0 && (
                 <>
-                <Row className="mb-4">
-                    <Col md={8}>
-                        <Form.Control
-                            type="text"
-                            placeholder="Search games in your library..."
-                            value={search}
-                            onChange={(e) => { setSearch(e.target.value); setCurrentPage(1); } } />
-                    </Col>
-                    <Col md={4} className="text-end">
+                    {/* Stats bar */}
+                    <div className="d-flex justify-content-between align-items-center mb-4 flex-wrap gap-2">
+                        <span className="text-muted">
+                            <strong className="text-white">{games.length}</strong> games &nbsp;·&nbsp;
+                            <strong className="text-white">{totalHours.toLocaleString()}</strong> hrs total
+                        </span>
                         <ButtonGroup>
-                            <Button 
-                                variant={sortType === 'playtime' ? 'primary' : 'outline-primary'} 
+                            <Button
+                                variant={sortType === 'playtime' ? 'primary' : 'outline-primary'}
                                 onClick={() => setSortType('playtime')}
                             >Most Played</Button>
-                            <Button 
-                                variant={sortType === 'name' ? 'primary' : 'outline-primary'} 
+                            <Button
+                                variant={sortType === 'name' ? 'primary' : 'outline-primary'}
                                 onClick={() => setSortType('name')}
                             >A–Z</Button>
                         </ButtonGroup>
-                    </Col>
-                </Row>
-                
-                
-                {/* GRID DISPLAY */}
-                <div className="game-grid">
-                    {currentGames.map(game => {
-                        const hours = Math.round(game.playtime_forever / 60);
-                        const imgUrl = `https://cdn.akamai.steamstatic.com/steam/apps/${game.appid}/header.jpg`;
-
-                        return (
-                            <a key={game.appid} href={`https://store.steampowered.com/app/${game.appid}`} target="_blank" rel="noopener noreferrer" className="game-card">
-                                <div className="game-art">
-                                    <img src={imgUrl} alt={game.name} loading="lazy" onError={e => { e.target.style.display = 'none'; e.target.parentElement.classList.add('no-art'); }} />
-                                </div>
-                                <div className="game-info">
-                                    <h3 className="game-name">{game.name}</h3>
-                                    <span className="game-hours">{hours > 0 ? `${hours.toLocaleString()} hrs` : '< 1 hr'}</span>
-                                </div>
-                            </a>
-                        );
-                    })}
-                </div>
-
-                {/* PAGINATION */}
-                {sortedGames.length > gamesPerPage && (
-                    <div className="d-flex justify-content-center align-items-center mt-5 mb-5 gap-3">
-                        <Button variant="outline-secondary" disabled={currentPage === 1} onClick={() => setCurrentPage(prev => prev - 1)}>
-                            Previous
-                        </Button>
-                        <span className="fw-bold">Page {currentPage} of {totalPages}</span>
-                        <Button variant="outline-secondary" disabled={currentPage === totalPages} onClick={() => setCurrentPage(prev => prev + 1)}>
-                            Next
-                        </Button>
                     </div>
-                )}
 
-                {/* NO GAME FOUND */}
-                {sortedGames.length === 0 && !loading && (
-                    <p className="text-center mt-5 text-muted">No games found matching your search.</p>
-                )}
+                    <Row className="mb-4">
+                        <Col md={8}>
+                            <Form.Control
+                                type="text"
+                                placeholder="Search games in your library..."
+                                value={search}
+                                onChange={(e) => { setSearch(e.target.value); setCurrentPage(1); } } />
+                        </Col>
+                    </Row>
+                    
+                    
+                    {/* GRID DISPLAY */}
+                    <div className="game-grid">
+                        {currentGames.map(game => {
+                            const hours = Math.round(game.playtime_forever / 60);
+                            const imgUrl = `https://cdn.akamai.steamstatic.com/steam/apps/${game.appid}/header.jpg`;
+
+                            return (
+                                <a key={game.appid} href={`https://store.steampowered.com/app/${game.appid}`} target="_blank" rel="noopener noreferrer" className="game-card">
+                                    <div className="game-art">
+                                        <img src={imgUrl} alt={game.name} loading="lazy" onError={e => { e.target.style.display = 'none'; e.target.parentElement.classList.add('no-art'); }} />
+                                    </div>
+                                    <div className="game-info">
+                                        <h3 className="game-name">{game.name}</h3>
+                                        <span className="game-hours">{hours > 0 ? `${hours.toLocaleString()} hrs` : '< 1 hr'}</span>
+                                    </div>
+                                </a>
+                            );
+                        })}
+                    </div>
+
+                    {/* PAGINATION */}
+                    {sortedGames.length > gamesPerPage && (
+                        <div className="d-flex justify-content-center align-items-center mt-5 mb-5 gap-3">
+                            <Button variant="outline-secondary" disabled={currentPage === 1} onClick={() => setCurrentPage(prev => prev - 1)}>
+                                Previous
+                            </Button>
+                            <span className="fw-bold">Page {currentPage} of {totalPages}</span>
+                            <Button variant="outline-secondary" disabled={currentPage === totalPages} onClick={() => setCurrentPage(prev => prev + 1)}>
+                                Next
+                            </Button>
+                        </div>
+                    )}
+
+                    {/* NO GAME FOUND */}
+                    {sortedGames.length === 0 && !loading && (
+                        <p className="text-center mt-5 text-muted">No games found matching your search.</p>
+                    )}
                 </>
             )}
         </Container>

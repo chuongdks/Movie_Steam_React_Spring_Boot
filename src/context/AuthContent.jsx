@@ -67,17 +67,27 @@ export const AuthProvider = ({ children }) => {
         setUser(null);
     };
 
-    // ── Steam login merges into existing session ───────────────────────────────
-    // Called by Dashboard.jsx after Steam OAuth redirect completes.
-    const mergeSteamId = (steamId) => {
-        const updated = { ...user, steamId };
-        localStorage.setItem('user', JSON.stringify(updated));
-        setUser(updated);
+    // Called by SteamLibrary after the backend link-callback redirects back.
+    // Just updates in-memory + localStorage — backend already persisted it.
+    const updateSteamId = (steamId) => {
+        setUser(prev => {
+            if (!prev) return prev;
+            const updated = { ...prev, steamId };
+            localStorage.setItem('user', JSON.stringify(updated));
+            return updated;
+        });
+    };
+
+    // Called when user clicks "Unlink Steam" in the header dropdown
+    const unlinkSteam = async (username) => {
+        await api.delete(`/api/v1/auth/steam/link?username=${username}`);
+        localStorage.removeItem('steamId');
+        updateSteamId(null);
     };
 
     return (
         // React v18 add .Provider
-        <AuthContext.Provider value={{ user, loadingUser, login, register, logout, mergeSteamId }}>
+        <AuthContext.Provider value={{ user, loadingUser, login, register, logout, updateSteamId, unlinkSteam }}>
             {children}
         </AuthContext.Provider>
     );

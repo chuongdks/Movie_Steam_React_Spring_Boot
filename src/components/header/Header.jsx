@@ -1,6 +1,7 @@
 import { useState } from 'react';
 import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
-import { faVideoSlash, faUser, faRightFromBracket }  from "@fortawesome/free-solid-svg-icons";
+import { faVideoSlash, faUser, faRightFromBracket, faCalendarXmark }  from "@fortawesome/free-solid-svg-icons";
+import { faLink, faLinkSlash } from "@fortawesome/free-solid-svg-icons";
 import Button from "react-bootstrap/Button";
 import Container from "react-bootstrap/Container"
 import Nav from "react-bootstrap/Nav";
@@ -12,13 +13,31 @@ import AuthModal from '../auth/AuthModal';
 
 
 const Header = () => {
-    const { user, logout } = useAuth();
-    const [modalTab, setModalTab] = useState(null); // null | 'login' | 'register'
+    const { user, logout, unlinkSteam } = useAuth();
+    const [modalTab, setModalTab]       = useState(null); // null | 'login' | 'register'
+    const [unlinking, setUnlinking]     = useState(false);
 
     const openLogin    = () => setModalTab('login');
     const openRegister = () => setModalTab('register');
     const closeModal   = () => setModalTab(null);
 
+    // Redirect to backend which starts the Steam OpenID flow for linking
+    const handleLinkSteam = () => {
+        window.location.href = `http://localhost:8080/api/v1/auth/steam/link?username=${user.username}`;
+    };
+
+    const handleUnlinkSteam = async () => {
+        if (!window.confirm('Unlink your Steam account?')) return;
+        setUnlinking(true);
+        try {
+            await unlinkSteam(user.username);
+        } catch (err) {
+            console.error('Failed to unlink Steam:', err);
+        } finally {
+            setUnlinking(false);
+        }
+    };
+    
     return (
         <>
             <Navbar bg="dark" variant="dark" expand="lg">
@@ -46,13 +65,40 @@ const Header = () => {
                                     <span style={{ color: 'gold' }}>
                                         <FontAwesomeIcon icon={faUser} className="me-1" />
                                         {user.username}
+                                        {/* Small Steam badge when linked */}
+                                        {user.steamId && (
+                                            <FontAwesomeIcon
+                                                icon={faCalendarXmark}
+                                                className="ms-2"
+                                                style={{ color: '#c6d4df', fontSize: '0.85em' }}
+                                                title="Steam linked"
+                                            />
+                                        )}
                                     </span>
                                 }
                                 id="user-dropdown"
                                 align="end"
                                 menuVariant="dark"
                             >
-                                {/* Future: profile, settings links go here */}
+                                {/* Steam link/unlink — conditional on whether steamId exists */}
+                                {!user.steamId ? (
+                                    <NavDropdown.Item onClick={handleLinkSteam}>
+                                        <FontAwesomeIcon icon={faLink} className="me-2" style={{ color: '#c6d4df' }} />
+                                        Link Steam Account
+                                    </NavDropdown.Item>
+                                ) : (
+                                    <NavDropdown.Item
+                                        onClick={handleUnlinkSteam}
+                                        disabled={unlinking}
+                                        className="text-danger-emphasis"
+                                    >
+                                        <FontAwesomeIcon icon={faLinkSlash} className="me-2" />
+                                        {unlinking ? 'Unlinking...' : 'Unlink Steam'}
+                                    </NavDropdown.Item>
+                                )}
+
+                                <NavDropdown.Divider />
+
                                 <NavDropdown.Item onClick={logout}>
                                     <FontAwesomeIcon icon={faRightFromBracket} className="me-2" />
                                     Logout
