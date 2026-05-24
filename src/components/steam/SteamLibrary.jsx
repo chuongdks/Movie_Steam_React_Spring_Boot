@@ -88,6 +88,7 @@ const SteamLibrary = () => {
                 entityType: 'GAME',
                 title:      game.name,
                 posterUrl:  imgUrl,
+                status:     'TO_WATCH'
             });
         }
     };
@@ -204,7 +205,7 @@ const SteamLibrary = () => {
                             const hours = Math.round(game.playtime_forever / 60);
                             const imgUrl = `https://cdn.akamai.steamstatic.com/steam/apps/${game.appid}/header.jpg`;
                             const entityId = String(game.appid);
-                            const inList   = isInWatchlist(entityId);
+                            const inList   = isInWatchlist(entityId);   // check if game is in the list (watch list)
 
                             return (
                                 <div key={game.appid} className="game-card-wrapper">

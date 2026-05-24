@@ -17,7 +17,6 @@ const WatchList = () => {
     if (!user) {
         return (
             <Container className="text-center mt-5 py-5">
-                <p style={{ fontSize: '3rem' }}>🔒</p>
                 <h4 className="text-white mb-3">Login to use your Watchlist</h4>
                 <p className="text-muted mb-4">Keep track of movies and games you want to watch or play.</p>
                 <Button variant="outline-warning" onClick={() => navigate('/')}>

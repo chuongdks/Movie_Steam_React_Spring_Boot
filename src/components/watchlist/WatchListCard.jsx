@@ -9,6 +9,7 @@ const WatchlistCard = ({ item }) => {
     const { removeItem, toggleStatus } = useWatchlist();
     const [busy, setBusy] = useState(false);
 
+    // ── HELPER FUNCTIONS ─────────────────────────────────────────────────
     const handleToggle = async () => {
         setBusy(true);
         try { 
@@ -21,14 +22,19 @@ const WatchlistCard = ({ item }) => {
 
     const handleRemove = async () => {
         setBusy(true);
-        try { await removeItem(item.entityId); }
-        finally { setBusy(false); }
+        try { 
+            await removeItem(item.entityId); 
+        }
+        finally { 
+            setBusy(false); 
+        }
     };
 
     const isCompleted = item.status     === 'COMPLETED';
     const isGame      = item.entityType === 'GAME';
 
     return (
+        // Display the Watchlist here
         <div className={`wl-card ${isCompleted ? 'wl-card--done' : ''}`}>
             {/* Poster / Art */}
             <div className="wl-art">
@@ -36,7 +42,7 @@ const WatchlistCard = ({ item }) => {
                     ? <img src={item.posterUrl} alt={item.title} loading="lazy" />
                     : <div className="wl-art-placeholder">{item.title[0]}</div>
                 }
-                {/* Completed overlay */}
+                {/* Completed item overlay */}
                 {isCompleted && (
                     <div className="wl-done-overlay">✓</div>
                 )}
@@ -66,13 +72,14 @@ const WatchlistCard = ({ item }) => {
                     >
                         {isCompleted ? '↩ Mark Unwatched' : '✓ Mark Complete'}
                     </button>
+
                     <button
                         className="wl-btn wl-btn-remove"
                         onClick={handleRemove}
                         disabled={busy}
                         aria-label="Remove from watchlist"
                     >
-                        ✕
+                        Remove
                     </button>
                 </div>
             </div>

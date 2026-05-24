@@ -16,11 +16,12 @@ const Hero = ({movies}) => {
 
     const handleWatchlist = async (movie) => {
         if (!user) {
-            // Nudge them to log in — could also open the AuthModal here
+            // Nudge user to log in, could also open the AuthModal here
             navigate('/');
             return;
         }
         const entityId = movie.imdbId;
+
         if (isInWatchlist(entityId)) {
             await removeItem(entityId);
         } else {
@@ -29,6 +30,7 @@ const Hero = ({movies}) => {
                 entityType: 'MOVIE',
                 title:      movie.title,
                 posterUrl:  movie.poster,
+                status:     'TO_WATCH'
             });
         }
     };
@@ -38,7 +40,7 @@ const Hero = ({movies}) => {
       <Carousel>
         {
             movies?.map((movie) => {
-                const inList = isInWatchlist(movie.imdbId);
+                const inList = isInWatchlist(movie.imdbId); // check if movie is in the list (watch list)
                 return(
                     <Paper key={movie.imdbId}>
                         <div className = 'movie-card-container'>

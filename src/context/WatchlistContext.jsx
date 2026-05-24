@@ -57,10 +57,7 @@ export const WatchlistProvider = ({ children }) => {
         if (!user) return;
         const item = watchlist.find(w => w.entityId === entityId);
         const newStatus = item.status === 'TO_WATCH' ? 'COMPLETED' : 'TO_WATCH';
-        const res = await api.patch(
-            `/api/v1/watchlist/${user.username}/${entityId}`,
-            { status: newStatus }
-        );
+        const res = await api.patch(`/api/v1/watchlist/${user.username}/${entityId}`, { status: newStatus });
         setWatchlist(prev => prev.map(w => w.entityId === entityId ? res.data : w));
     };
 
