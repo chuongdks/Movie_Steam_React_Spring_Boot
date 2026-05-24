@@ -1,7 +1,8 @@
 import { useState, useEffect } from 'react';
 import { useLocation, useSearchParams } from 'react-router-dom';
 import api from '../../api/axiosConfig'; 
-import { useAuth } from '../../context/AuthContent';
+import { useAuth } from '../../context/AuthContext';
+import { useWatchlist } from '../../context/WatchlistContext';
 import { Container, Row, Col, Form, Button, Spinner, Alert, ButtonGroup } from 'react-bootstrap';
 import './SteamLibrary.css';
 
@@ -9,6 +10,7 @@ const SteamLibrary = () => {
     const location                          = useLocation();    // Access passed state
     const [searchParams, setSearchParams]   = useSearchParams();
     const { user, updateSteamId }           = useAuth();
+    const { addItem, removeItem, isInWatchlist } = useWatchlist();
 
     const [steamId, setSteamId]             = useState('');
     const [games, setGames]                 = useState(location.state?.initialGames || []);
@@ -47,7 +49,7 @@ const SteamLibrary = () => {
         }
     }, []); // run once on mount
 
-    // ── Auto-load on mount (refresh / direct navigation) ──────────────────────
+    // ── Auto-load on refresh / direct navigation ──────────────────────
     useEffect(() => {
         const savedId = localStorage.getItem("steamId");
         // Sync if: Page didn't come from Dashboard, or When user hit F5
@@ -56,7 +58,8 @@ const SteamLibrary = () => {
         }
     }, []);
 
-    // ── Sync library from the back end ──────────────────────────────────────────────────
+    // ── HELPER METHODS ──────────────────────────────────────────────────────────────────
+    // Sync library from the back end
     const performSync = async (id) => {
         if (!id) return;
         
@@ -72,13 +75,30 @@ const SteamLibrary = () => {
         }
     };
 
+    // Check if item is in a WatchList
+    const handleWatchlist = async (game) => {
+        const entityId = String(game.appid);
+        const imgUrl   = `https://cdn.akamai.steamstatic.com/steam/apps/${game.appid}/header.jpg`;
+
+        if (isInWatchlist(entityId)) {
+            await removeItem(entityId);
+        } else {
+            await addItem({
+                entityId,
+                entityType: 'GAME',
+                title:      game.name,
+                posterUrl:  imgUrl,
+            });
+        }
+    };
+
     // ── Filter → Sort → Paginate ──────────────────────────────────────────────
     // 1. FILTERING (Search)
     const filteredGames = games.filter((game) => 
         game.name.toLowerCase().includes(search.toLowerCase())
     );
 
-    // 2. SORTING GAMES 
+    // 2. SORTING GAMES BY...
     const sortedGames = [...filteredGames].sort((a, b) => {
         if (sortType === 'name') {
             return a.name.localeCompare(b.name);            // Alphabetical
@@ -92,11 +112,8 @@ const SteamLibrary = () => {
     const indexOfFirstGame = indexOfLastGame - gamesPerPage;
     const currentGames = sortedGames?.slice(indexOfFirstGame, indexOfLastGame);
     const totalPages = Math.ceil((sortedGames?.length || 0) / gamesPerPage);
-
-    // Statistical calculation 
-    const totalHours = Math.round(
-        games.reduce((acc, g) => acc + g.playtime_forever, 0) / 60
-    );
+    // Statistical calculation stuff here
+    const totalHours = Math.round(games.reduce((acc, g) => acc + g.playtime_forever, 0) / 60);
 
     return (
         <Container className="steam-library mt-5">
@@ -127,32 +144,20 @@ const SteamLibrary = () => {
                     {user ? (
                         <>
                             <p className="text-muted mb-3">Link your Steam account to view your library.</p>
-                            <Button
-                                variant="dark"
-                                onClick={() => { window.location.href = `http://localhost:8080/api/v1/auth/steam/link?username=${user.username}`; }}
-                            >
-                                <img
-                                    src="https://steamcdn-a.akamaihd.net/steamcommunity/public/images/steamworks_docs/english/sits_small.png"
-                                    alt="Link Steam Account"
-                                />
+
+                            <Button variant="dark" onClick={() => { window.location.href = `http://localhost:8080/api/v1/auth/steam/link?username=${user.username}`; }} >
+                                <img src="https://steamcdn-a.akamaihd.net/steamcommunity/public/images/steamworks_docs/english/sits_small.png" alt="Link Steam Account"/>
                             </Button>
                         </>
                     ) : (
                         <>
-                            <Button
-                                variant="dark"
-                                href="http://localhost:8080/api/v1/auth/login"
-                            >
-                                <img
-                                    src="https://steamcdn-a.akamaihd.net/steamcommunity/public/images/steamworks_docs/english/sits_small.png"
-                                    alt="Sign in through Steam"
-                                />
+                            <Button variant="dark" href="http://localhost:8080/api/v1/auth/login">
+                                <img src="https://steamcdn-a.akamaihd.net/steamcommunity/public/images/steamworks_docs/english/sits_small.png" alt="Sign in through Steam"/>
                             </Button>
+
                             <p className="mt-3 text-muted">Or enter your Steam ID manually:</p>
-                            <Form
-                                onSubmit={(e) => { e.preventDefault(); performSync(steamId); }}
-                                className="d-flex justify-content-center gap-2"
-                            >
+
+                            <Form onSubmit={(e) => { e.preventDefault(); performSync(steamId); }} className="d-flex justify-content-center gap-2">
                                 <Form.Control
                                     style={{ maxWidth: '300px' }}
                                     placeholder="76561198..."
@@ -175,15 +180,10 @@ const SteamLibrary = () => {
                             <strong className="text-white">{games.length}</strong> games &nbsp;·&nbsp;
                             <strong className="text-white">{totalHours.toLocaleString()}</strong> hrs total
                         </span>
+
                         <ButtonGroup>
-                            <Button
-                                variant={sortType === 'playtime' ? 'primary' : 'outline-primary'}
-                                onClick={() => setSortType('playtime')}
-                            >Most Played</Button>
-                            <Button
-                                variant={sortType === 'name' ? 'primary' : 'outline-primary'}
-                                onClick={() => setSortType('name')}
-                            >A–Z</Button>
+                            <Button variant={sortType === 'playtime' ? 'primary' : 'outline-primary'}   onClick={() => setSortType('playtime')} > Most Played   </Button>
+                            <Button variant={sortType === 'name' ? 'primary' : 'outline-primary'}       onClick={() => setSortType('name')}     > By Alphabet   </Button>
                         </ButtonGroup>
                     </div>
 
@@ -203,17 +203,34 @@ const SteamLibrary = () => {
                         {currentGames.map(game => {
                             const hours = Math.round(game.playtime_forever / 60);
                             const imgUrl = `https://cdn.akamai.steamstatic.com/steam/apps/${game.appid}/header.jpg`;
+                            const entityId = String(game.appid);
+                            const inList   = isInWatchlist(entityId);
 
                             return (
-                                <a key={game.appid} href={`https://store.steampowered.com/app/${game.appid}`} target="_blank" rel="noopener noreferrer" className="game-card">
-                                    <div className="game-art">
-                                        <img src={imgUrl} alt={game.name} loading="lazy" onError={e => { e.target.style.display = 'none'; e.target.parentElement.classList.add('no-art'); }} />
-                                    </div>
-                                    <div className="game-info">
-                                        <h3 className="game-name">{game.name}</h3>
-                                        <span className="game-hours">{hours > 0 ? `${hours.toLocaleString()} hrs` : '< 1 hr'}</span>
-                                    </div>
-                                </a>
+                                <div key={game.appid} className="game-card-wrapper">
+                                    {/* Game info display */}
+                                    <a href={`https://store.steampowered.com/app/${game.appid}`} target="_blank" rel="noopener noreferrer" className="game-card">
+                                        <div className="game-art">
+                                            <img src={imgUrl} alt={game.name} loading="lazy" onError={e => { e.target.style.display = 'none'; e.target.parentElement.classList.add('no-art'); }} />
+                                        </div>
+                                        <div className="game-info">
+                                            <h3 className="game-name">{game.name}</h3>
+                                            <span className="game-hours">{hours > 0 ? `${hours.toLocaleString()} hrs` : '< 1 hr'}</span>
+                                            {/* Game tag here in the future */}
+                                        </div>
+                                    </a>
+
+                                    {/* Watchlist button, only for logged-in users */}
+                                    {user && (
+                                        <button
+                                            className={`game-wl-btn ${inList ? 'game-wl-btn--saved' : ''}`}
+                                            onClick={() => handleWatchlist(game)}
+                                            title={inList ? 'Remove from Watchlist' : 'Add to Watchlist'}
+                                        >
+                                            {inList ? '🔖' : '＋'}
+                                        </button>
+                                    )}
+                                </div>
                             );
                         })}
                     </div>
@@ -221,20 +238,14 @@ const SteamLibrary = () => {
                     {/* PAGINATION */}
                     {sortedGames.length > gamesPerPage && (
                         <div className="d-flex justify-content-center align-items-center mt-5 mb-5 gap-3">
-                            <Button variant="outline-secondary" disabled={currentPage === 1} onClick={() => setCurrentPage(prev => prev - 1)}>
-                                Previous
-                            </Button>
+                            <Button variant="outline-secondary" disabled={currentPage === 1}            onClick={() => setCurrentPage(prev => prev - 1)}> Previous </Button>
                             <span className="fw-bold">Page {currentPage} of {totalPages}</span>
-                            <Button variant="outline-secondary" disabled={currentPage === totalPages} onClick={() => setCurrentPage(prev => prev + 1)}>
-                                Next
-                            </Button>
+                            <Button variant="outline-secondary" disabled={currentPage === totalPages}   onClick={() => setCurrentPage(prev => prev + 1)}> Next </Button>
                         </div>
                     )}
 
                     {/* NO GAME FOUND */}
-                    {sortedGames.length === 0 && !loading && (
-                        <p className="text-center mt-5 text-muted">No games found matching your search.</p>
-                    )}
+                    {sortedGames.length === 0 && !loading && ( <p className="text-center mt-5 text-muted">No games found matching your search.</p> )}
                 </>
             )}
         </Container>

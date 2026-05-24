@@ -10,6 +10,7 @@ import Reviews from './components/reviews/Review.jsx';
 import NotFound from './components/notFound/NotFound.jsx';
 import SteamLibrary from './components/steam/SteamLibrary.jsx';
 import Dashboard from './components/dashboard/Dashboard.jsx'
+import WatchList from './components/watchlist/WatchList.jsx'
 
 function App() {
 
@@ -56,12 +57,13 @@ function App() {
       <Header/>
       <Routes>
           <Route path="/" element={<Layout/>}>
-            <Route path="/" element={<Home movies={movies} />} ></Route>
-            <Route path="/Trailer/:ytTrailerId" element={<Trailer/>}></Route>
-            <Route path="/Reviews/:movieId" element ={<Reviews getMovieData={getMovieData} movie={movie} reviews={reviews} setReviews={setReviews} />}></Route>
-            <Route path="/steam" element={<SteamLibrary />} />
-            <Route path="/dashboard" element={<Dashboard />} />
-            <Route path="*" element = {<NotFound/>}></Route>
+            <Route path="/"                     element={<Home movies={movies} />} />
+            <Route path="/Trailer/:ytTrailerId" element={<Trailer/>} />
+            <Route path="/Reviews/:movieId"     element ={<Reviews getMovieData={getMovieData} movie={movie} reviews={reviews} setReviews={setReviews} />} />
+            <Route path="/steam"                element={<SteamLibrary />} />
+            <Route path="/dashboard"            element={<Dashboard />} />
+            <Route path="/watchList"            element={<WatchList />} />
+            <Route path="*"                     element = {<NotFound/>} />
           </Route>
       </Routes>
 

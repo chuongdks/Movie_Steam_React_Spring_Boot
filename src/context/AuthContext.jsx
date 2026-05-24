@@ -5,8 +5,7 @@ import api from '../api/axiosConfig';
 const AuthContext = createContext(null);
 
 /**
- * User info: { username, email, role, steamId? } - Match the back end
- * null when logged out
+ * User info: { username, email, role, steamId? } - Match the back end null when logged out
  */
 export const AuthProvider = ({ children }) => {
     const [user, setUser] = useState(null);
@@ -32,7 +31,7 @@ export const AuthProvider = ({ children }) => {
 
     // ── LOGIN ────────────────────────────────────────────────────────────
     // Request : POST /api/v1/auth/login  { "username": "john", "password": "secret123" }
-    // Response: { "token": "lmao...", "user": { "username", "email", "role" } }
+    // Response: { "token": "lmao6767adasdw...", "user": { "username", "email", "role" } }
     const login = async (username, password) => {
         const response = await api.post('/api/v1/auth/login', { username, password });
         const { token, user: userData } = response.data;
@@ -67,17 +66,19 @@ export const AuthProvider = ({ children }) => {
         setUser(null);
     };
 
-    // Called by SteamLibrary after the backend link-callback redirects back.
-    // Just updates in-memory + localStorage — backend already persisted it.
+    // ── LINK STEAM ID ────────────────────────────────────────────────────
+    // Called by SteamLibrary after the backend link-callback API redirects back.
+    // Just updates in-memory + localStorage, backend already persisted it.
     const updateSteamId = (steamId) => {
         setUser(prev => {
             if (!prev) return prev;
-            const updated = { ...prev, steamId };
+            const updated = { ...prev, steamId };   // FYI this is Object Spread and it just add a steamId key to user
             localStorage.setItem('user', JSON.stringify(updated));
             return updated;
         });
     };
 
+    // ── UNLINK STEAM ID ────────────────────────────────────────────────────
     // Called when user clicks "Unlink Steam" in the header dropdown
     const unlinkSteam = async (username) => {
         await api.delete(`/api/v1/auth/steam/link?username=${username}`);

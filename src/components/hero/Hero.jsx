@@ -2,24 +2,43 @@ import './Hero.css'
 import Carousel from 'react-material-ui-carousel'
 import { Paper } from '@mui/material'
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome'
-import { faCirclePlay } from '@fortawesome/free-solid-svg-icons'
+import { faCirclePlay, faBookmark } from '@fortawesome/free-solid-svg-icons'
+import { faBookmark as faBookmarkOutline } from '@fortawesome/free-regular-svg-icons'
 import { Link, useNavigate } from 'react-router-dom'
 import Button from 'react-bootstrap/Button';
+import { useAuth } from '../../context/AuthContext';
+import { useWatchlist } from '../../context/WatchlistContext';
 
 const Hero = ({movies}) => {
-
     const navigate = useNavigate();
+    const { user } = useAuth();
+    const { addItem, removeItem, isInWatchlist } = useWatchlist();
 
-    function reviews(movieId)
-    {
-        navigate(`/Reviews/${movieId}`);
-    }
-
+    const handleWatchlist = async (movie) => {
+        if (!user) {
+            // Nudge them to log in — could also open the AuthModal here
+            navigate('/');
+            return;
+        }
+        const entityId = movie.imdbId;
+        if (isInWatchlist(entityId)) {
+            await removeItem(entityId);
+        } else {
+            await addItem({
+                entityId,
+                entityType: 'MOVIE',
+                title:      movie.title,
+                posterUrl:  movie.poster,
+            });
+        }
+    };
+        
   return (
     <div className ='movie-carousel-container'>
       <Carousel>
         {
-            movies?.map((movie) =>{
+            movies?.map((movie) => {
+                const inList = isInWatchlist(movie.imdbId);
                 return(
                     <Paper key={movie.imdbId}>
                         <div className = 'movie-card-container'>
@@ -41,7 +60,25 @@ const Hero = ({movies}) => {
                                         </Link>
 
                                         <div className="movie-review-button-container">
-                                            <Button variant ="info" onClick={() => reviews(movie.imdbId)} >Reviews</Button>
+                                            <Button variant ="info" onClick={() => navigate(`/Reviews/${movie.imdbId}`)}>
+                                                Reviews
+                                            </Button>
+
+                                            {/* Watchlist toggle — only shown to logged-in users */}
+                                            {user && (
+                                                <Button
+                                                    variant={inList ? "warning" : "outline-warning"}
+                                                    size="sm"
+                                                    onClick={() => handleWatchlist(movie)}
+                                                    title={inList ? "Remove from Watchlist" : "Add to Watchlist"}
+                                                >
+                                                    <FontAwesomeIcon
+                                                        icon={inList ? faBookmark : faBookmarkOutline}
+                                                        className="me-1"
+                                                    />
+                                                    {inList ? 'Saved' : 'Watchlist'}
+                                                </Button>
+                                            )}
                                         </div>
                                     </div>
                                 </div>

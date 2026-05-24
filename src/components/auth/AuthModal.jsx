@@ -1,10 +1,10 @@
 import { useState, useRef, useEffect } from 'react';
 import { Modal, Tab, Nav, Form, Button, Alert, Spinner } from 'react-bootstrap';
-import { useAuth } from '../../context/AuthContent';
+import { useAuth } from '../../context/AuthContext';
 import myStyles from './AuthModal.css?inline';
 
 /**
- * 
+ * Open the Model for Login and Registering
  * @props {*}  
  *   show        {boolean}  — controlled by Header (for the Modal)
  *   onHide      {function} — close the modal (for the Modal)

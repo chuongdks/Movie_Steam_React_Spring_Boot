@@ -8,7 +8,7 @@ import Nav from "react-bootstrap/Nav";
 import Navbar from "react-bootstrap/Navbar";
 import NavDropdown from "react-bootstrap/NavDropdown";
 import { NavLink } from "react-router-dom";
-import { useAuth } from '../../context/AuthContent';
+import { useAuth } from '../../context/AuthContext';
 import AuthModal from '../auth/AuthModal';
 
 
@@ -80,7 +80,7 @@ const Header = () => {
                                 align="end"
                                 menuVariant="dark"
                             >
-                                {/* Steam link/unlink — conditional on whether steamId exists */}
+                                {/* Steam link/unlink — conditional if steamId exists in the User's properties*/}
                                 {!user.steamId ? (
                                     <NavDropdown.Item onClick={handleLinkSteam}>
                                         <FontAwesomeIcon icon={faLink} className="me-2" style={{ color: '#c6d4df' }} />
