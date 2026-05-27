@@ -111,7 +111,7 @@ const AuthModal = ({ show, onHide, defaultTab }) => {
 
     // ── Steam login (use the steam login back end) ─────────────────────────────────────────
     const handleSteamLogin = () => {
-        window.location.href = 'http://localhost:8080/api/v1/auth/login';
+        window.location.href = getSteamLinkUrl(user.username); // 'http://localhost:8080/api/v1/auth/login'
     };
 
     // need this to show the correct active default tab (login, register) initially

@@ -5,6 +5,7 @@ import { useAuth } from '../../context/AuthContext';
 import { useWatchlist } from '../../context/WatchlistContext';
 import { Container, Row, Col, Form, Button, Spinner, Alert, ButtonGroup } from 'react-bootstrap';
 import './SteamLibrary.css';
+import api, { getSteamLinkUrl, getSteamLoginUrl } from '../../api/axiosConfig';
 
 const SteamLibrary = () => {
     const location                          = useLocation();    // Access passed state
@@ -146,13 +147,13 @@ const SteamLibrary = () => {
                         <>
                             <p className="text-muted mb-3">Link your Steam account to view your library.</p>
 
-                            <Button variant="dark" onClick={() => { window.location.href = `http://localhost:8080/api/v1/auth/steam/link?username=${user.username}`; }} >
+                            <Button variant="dark" onClick={() => { window.location.href = getSteamLinkUrl(user.username); }} > 
                                 <img src="https://steamcdn-a.akamaihd.net/steamcommunity/public/images/steamworks_docs/english/sits_small.png" alt="Link Steam Account"/>
                             </Button>
                         </>
                     ) : (
                         <>
-                            <Button variant="dark" href="http://localhost:8080/api/v1/auth/login">
+                            <Button variant="dark" onClick={() => { window.location.href = getSteamLoginUrl(); }}>
                                 <img src="https://steamcdn-a.akamaihd.net/steamcommunity/public/images/steamworks_docs/english/sits_small.png" alt="Sign in through Steam"/>
                             </Button>
 

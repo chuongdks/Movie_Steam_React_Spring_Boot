@@ -10,7 +10,7 @@ import NavDropdown from "react-bootstrap/NavDropdown";
 import { NavLink } from "react-router-dom";
 import { useAuth } from '../../context/AuthContext';
 import AuthModal from '../auth/AuthModal';
-
+import api, { getSteamLinkUrl, getSteamLoginUrl } from '../../api/axiosConfig';
 
 const Header = () => {
     const { user, logout, unlinkSteam } = useAuth();
@@ -23,7 +23,7 @@ const Header = () => {
 
     // Redirect to backend which starts the Steam OpenID flow for linking
     const handleLinkSteam = () => {
-        window.location.href = `http://localhost:8080/api/v1/auth/steam/link?username=${user.username}`;
+        window.location.href = getSteamLinkUrl(user.username); //`http://localhost:8080/api/v1/auth/steam/link?username=${user.username}`;
     };
 
     const handleUnlinkSteam = async () => {
@@ -115,7 +115,7 @@ const Header = () => {
                                 </Button>
                                 {/* Steam SSO — goes straight to backend redirect */}
                                 <button
-                                    onClick={() => { window.location.href = 'http://localhost:8080/api/v1/auth/login'; }}
+                                    onClick={() => { window.location.href = getSteamLoginUrl(); }} // 'http://localhost:8080/api/v1/auth/login'
                                     style={{ border: 'none', background: 'none', padding: 0, cursor: 'pointer' }}
                                     title="Sign in through Steam"
                                 >
