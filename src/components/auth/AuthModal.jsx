@@ -2,6 +2,7 @@ import { useState, useRef, useEffect } from 'react';
 import { Modal, Tab, Nav, Form, Button, Alert, Spinner } from 'react-bootstrap';
 import { useAuth } from '../../context/AuthContext';
 import myStyles from './AuthModal.css?inline';
+import api, { getSteamLinkUrl, getSteamLoginUrl } from '../../api/axiosConfig';
 
 /**
  * Open the Model for Login and Registering
