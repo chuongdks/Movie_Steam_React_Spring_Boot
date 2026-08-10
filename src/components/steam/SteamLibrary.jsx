@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { useLocation, useSearchParams } from 'react-router-dom';
+import { useLocation, useSearchParams, useNavigate } from 'react-router-dom';
 import { useAuth } from '../../context/AuthContext';
 import { useWatchlist } from '../../context/WatchlistContext';
 import { Container, Row, Col, Form, Button, Spinner, Alert, ButtonGroup } from 'react-bootstrap';
@@ -10,6 +10,7 @@ const SteamLibrary = () => {
     const location                          = useLocation();    // Access passed state
     const [searchParams, setSearchParams]   = useSearchParams();
     const { user, updateSteamId }           = useAuth();
+    const navigate = useNavigate();
     const { addItem, removeItem, isInWatchlist } = useWatchlist();
 
     const [steamId, setSteamId]             = useState('');
@@ -41,7 +42,6 @@ const SteamLibrary = () => {
 
             // Sync the library with the newly linked steamId
             performSync(newSteamId);
-
         } else if (linked === 'false') {
             const reason = searchParams.get('reason') || 'Steam linking failed. Please try again.';
             setLinkAlert({ type: 'danger', message: decodeURIComponent(reason) });
@@ -54,7 +54,7 @@ const SteamLibrary = () => {
         const savedId = localStorage.getItem("steamId");
         // Sync if: Page didn't come from Dashboard, or When user hit F5
         if (savedId && games.length === 0) {
-            performSync(savedId); 
+            performSync(savedId);
         }
     }, []);
 
@@ -88,7 +88,6 @@ const SteamLibrary = () => {
                 entityType: 'GAME',
                 title:      game.name,
                 posterUrl:  imgUrl,
-                status:     'TO_WATCH'
             });
         }
     };
@@ -183,29 +182,30 @@ const SteamLibrary = () => {
                         </span>
 
                         <ButtonGroup>
-                            <Button variant={sortType === 'playtime' ? 'primary' : 'outline-primary'}   onClick={() => setSortType('playtime')} > Most Played   </Button>
-                            <Button variant={sortType === 'name' ? 'primary' : 'outline-primary'}       onClick={() => setSortType('name')}     > By Alphabet   </Button>
+                            <Button variant={sortType === 'playtime' ? 'primary' : 'outline-primary'} onClick={() => setSortType('playtime')}>Most Played</Button>
+                            <Button variant={sortType === 'name'     ? 'primary' : 'outline-primary'} onClick={() => setSortType('name')}>A–Z</Button>
                         </ButtonGroup>
                     </div>
 
                     <Row className="mb-4">
-                        <Col md={8}>
+                        <Col>
                             <Form.Control
                                 type="text"
-                                placeholder="Search games in your library..."
+                                placeholder="Search your library..."
                                 value={search}
-                                onChange={(e) => { setSearch(e.target.value); setCurrentPage(1); } } />
+                                onChange={(e) => { setSearch(e.target.value); setCurrentPage(1); }}
+                            />
                         </Col>
                     </Row>
-                    
+
                     
                     {/* GRID DISPLAY */}
                     <div className="game-grid">
                         {currentGames.map(game => {
-                            const hours = Math.round(game.playtime_forever / 60);
-                            const imgUrl = `https://cdn.akamai.steamstatic.com/steam/apps/${game.appid}/header.jpg`;
+                            const hours    = Math.round(game.playtime_forever / 60);
+                            const imgUrl   = `https://cdn.akamai.steamstatic.com/steam/apps/${game.appid}/header.jpg`;
                             const entityId = String(game.appid);
-                            const inList   = isInWatchlist(entityId);   // check if game is in the list (watch list)
+                            const inList   = isInWatchlist(entityId);
 
                             return (
                                 <div key={game.appid} className="game-card-wrapper">
@@ -221,8 +221,16 @@ const SteamLibrary = () => {
                                         </div>
                                     </a>
 
-                                    {/* Watchlist button, only for logged-in users */}
-                                    {user && (
+                                    {/* Watchlist button — only for logged-in users */}
+                                    {/* Reviews button — always visible */}
+                                    <button
+                                        className="game-reviews-btn"
+                                        onClick={() => navigate(`/reviews/${entityId}`, { state: { title: game.name, posterUrl: imgUrl, entityType: 'GAME' } })}
+                                    >
+                                        Reviews
+                                    </button>
+
+                                    {user && ( 
                                         <button
                                             className={`game-wl-btn ${inList ? 'game-wl-btn--saved' : ''}`}
                                             onClick={() => handleWatchlist(game)}
@@ -249,6 +257,51 @@ const SteamLibrary = () => {
                     {sortedGames.length === 0 && !loading && ( <p className="text-center mt-5 text-muted">No games found matching your search.</p> )}
                 </>
             )}
+
+            <style>{`
+                .game-card-wrapper {
+                    position: relative;
+                }
+                .game-wl-btn {
+                    position: absolute;
+                    top: 8px;
+                    right: 8px;
+                    width: 28px;
+                    height: 28px;
+                    border-radius: 50%;
+                    border: none;
+                    background: rgba(0,0,0,0.7);
+                    color: #fff;
+                    font-size: 0.85rem;
+                    cursor: pointer;
+                    display: flex;
+                    align-items: center;
+                    justify-content: center;
+                    opacity: 0;
+                    transition: opacity 0.2s;
+                    z-index: 2;
+                }
+                .game-card-wrapper:hover .game-wl-btn { opacity: 1; }
+                .game-wl-btn--saved { opacity: 1; background: rgba(255,215,0,0.85); }
+                .game-reviews-btn {
+                    position: absolute;
+                    bottom: 8px;
+                    left: 0;
+                    right: 0;
+                    margin: 0 8px;
+                    padding: 4px 0;
+                    border-radius: 6px;
+                    border: none;
+                    background: rgba(0,0,0,0.75);
+                    color: #c6d4df;
+                    font-size: 0.75rem;
+                    font-weight: 600;
+                    cursor: pointer;
+                    opacity: 0;
+                    transition: opacity 0.2s;
+                }
+                .game-card-wrapper:hover .game-reviews-btn { opacity: 1; }
+            `}</style>
         </Container>
     );
 };

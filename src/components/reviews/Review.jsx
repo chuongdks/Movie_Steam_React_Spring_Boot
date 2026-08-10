@@ -1,3 +1,4 @@
+// Deprecated, use ENtityReivew.jsx instead
 import { useEffect, useRef } from "react";
 import api from '../../api/axiosConfig.js';
 import {useParams} from 'react-router-dom';

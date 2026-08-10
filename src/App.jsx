@@ -6,9 +6,10 @@ import {Routes, Route} from 'react-router-dom'
 import Home from './components/home/Home.jsx'
 import Header from './components/header/Header.jsx'
 import Trailer from './components/trailer/Trailer.jsx'
-import Reviews from './components/reviews/Review.jsx';
-import NotFound from './components/notFound/NotFound.jsx';
-import SteamLibrary from './components/steam/SteamLibrary.jsx';
+import Reviews from './components/reviews/Review.jsx'
+import EntityReview from './components/reviews/EntityReview.jsx'
+import NotFound from './components/notFound/NotFound.jsx'
+import SteamLibrary from './components/steam/SteamLibrary.jsx'
 import Dashboard from './components/dashboard/Dashboard.jsx'
 import WatchList from './components/watchlist/WatchList.jsx'
 
@@ -59,7 +60,9 @@ function App() {
           <Route path="/" element={<Layout/>}>
             <Route path="/"                     element={<Home movies={movies} />} />
             <Route path="/Trailer/:ytTrailerId" element={<Trailer/>} />
-            <Route path="/Reviews/:movieId"     element ={<Reviews getMovieData={getMovieData} movie={movie} reviews={reviews} setReviews={setReviews} />} />
+            {/* Existing movie review route, kept for backwards compatibility. Use the new EntityReview below */}
+            <Route path="/legacy-reviews/:movieId"     element ={<Reviews getMovieData={getMovieData} movie={movie} reviews={reviews} setReviews={setReviews} />} />
+            <Route path="/reviews/:entityId"    element={<EntityReview />} />
             <Route path="/steam"                element={<SteamLibrary />} />
             <Route path="/dashboard"            element={<Dashboard />} />
             <Route path="/watchList"            element={<WatchList />} />

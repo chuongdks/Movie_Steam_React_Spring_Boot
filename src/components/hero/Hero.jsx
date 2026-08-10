@@ -62,7 +62,7 @@ const Hero = ({movies}) => {
                                         </Link>
 
                                         <div className="movie-review-button-container">
-                                            <Button variant ="info" onClick={() => navigate(`/Reviews/${movie.imdbId}`)}>
+                                            <Button variant ="info" onClick={() => navigate(`/reviews/${movie.imdbId}`, { state: { title: movie.title, posterUrl: movie.poster, entityType: 'MOVIE' } })}>
                                                 Reviews
                                             </Button>
 
